@@ -12,6 +12,7 @@
 
 <script lang="ts">
 import { Component, Prop, Vue } from 'vue-property-decorator'
+import { Note } from './ScaleTool.vue';
 
 interface Vector2 {
   x: number,
@@ -20,9 +21,9 @@ interface Vector2 {
 
 @Component
 export default class Neck extends Vue {
-  @Prop() private height: number = 150;
-  @Prop() private width: number = 600;
-  @Prop() private notes!: string[][];
+  @Prop() private height: number = 300;
+  @Prop() private width: number = 1000;
+  @Prop() private notes!: (Note | undefined)[][];
 
   private canvas!: HTMLCanvasElement;
   $refs!: {
@@ -38,9 +39,9 @@ export default class Neck extends Vue {
     if(ctx) {
       ctx.fillStyle = '#FFD633';
       ctx.fillRect(0, 0, this.width, this.height);
-      drawFrets(ctx, this.width, this.height, 22);
-      drawStrings(ctx, this.width, this.height, 6);
-      drawInfo(ctx, this.width, this.height, 6, 22, this.notes);
+      drawFrets(ctx, this.width, this.height, this.notes[0].length);
+      drawStrings(ctx, this.width, this.height, this.notes.length);
+      drawInfo(ctx, this.width, this.height, this.notes);
     }
   }
 }
@@ -49,25 +50,32 @@ const drawInfo: (
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
-  stringCount: number,
-  fretCount: number,
-  info: string[][]
-) => void = (ctx, width, height, stringCount, fretCount, info) => {
-  const xSpacing: number = width / (fretCount + 1);
-  const ySpacing: number = height / (stringCount + 1);
+  notes: (Note | undefined)[][]
+) => void = (ctx, width, height, notes) => {
+  const xSpacing: number = width / (notes[0].length + 1);
+  const ySpacing: number = height / (notes.length + 1);
 
-  for(let i = 0; i <= stringCount; i++) {
-    for(let j = 0; j <= fretCount; j++) {
-      const x: number = (j * xSpacing) + (xSpacing / 2);
-      const y: number = (i + 1) * ySpacing;
-      ctx.textBaseline = 'middle';
-      ctx.textAlign = 'center';
+  // TODO: merkkaukset
+  for(let string = 0; string < notes.length; string++) {
+    for(let fret = 0; fret < notes[0].length; fret++) {
+      // if ([3, 5, 7, 9, 12].includes(fret)) {
+      //   ctx.fillStyle = '#dbb725';
+      //   ctx.fillRect(fret * xSpacing, 0, (fret * xSpacing) + xSpacing, height);
+      // }
 
-      drawCircle(ctx, { x, y }, 5, 'white');
+      if (notes[string][fret]) {
+        const x: number = (fret * xSpacing) + (xSpacing / 2);
+        const y: number = (string + 1) * ySpacing;
+        ctx.textBaseline = 'middle';
+        ctx.textAlign = 'center';
+        ctx.font = '20px bold';
 
-      ctx.fillStyle = 'black';
-      // middle of fret, on top of string
-      ctx.fillText(info[i][j], x, y);
+        drawCircle(ctx, { x, y }, 12, 'white');
+
+        ctx.fillStyle = 'black';
+        // middle of fret, on top of string
+        ctx.fillText(notes[string][fret] as Note, x, y);
+      }
     }
   }
 }
@@ -79,7 +87,7 @@ const drawStrings: (
   count: number
 ) => void = (ctx, width, height, count) => {
   const spacing: number = height / (count + 1);
-  ctx.lineWidth = 3;
+  ctx.lineWidth = 2;
   for(let i = 1; i <= count; i++) {
     drawLine(ctx, { x: 0, y: i * spacing }, { x: width, y: i * spacing })
   }
@@ -93,7 +101,7 @@ const drawFrets: (
 ) => void = (ctx, width, height, count) => {
   // one fret padding in the end
   const spacing: number = width / (count + 1);
-  ctx.lineWidth = 1;
+  ctx.lineWidth = 3;
   for(let i = 1; i <= count; i++) {
     drawLine(ctx, { x: i * spacing, y: 0 }, { x: i * spacing, y: height })
   }
